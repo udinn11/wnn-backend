@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatbot</title>
+  <link rel="stylesheet" href="chatbot.css">
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">Chatbot</div>
+    <div class="chat-body" id="chat-body">
+      <!-- Chat messages will be displayed here -->
+    </div>
+    <div class="chat-footer">
+      <input type="text" id="user-input" placeholder="Type your message..." />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const chatBody = document.getElementById('chat-body');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // Add message to the chat body
+    function addMessage(sender, text) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${sender}-message`;
+      messageDiv.textContent = text;
+      chatBody.appendChild(messageDiv);
+      chatBody.scrollTop = chatBody.scrollHeight; // Scroll to the bottom
+    }
+
+    // Handle sending a message
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
+
+      // Add user's message to the chat
+      addMessage('user', message);
+      userInput.value = '';
+
+      try {
+        // Send the message to the backend
+        const response = await fetch('http://localhost:5000/dialogflow', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            queryText: message,
+            sessionId: 'user-session-12345',
+            languageCode: 'en',
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch');
+        }
+
+        const data = await response.json();
+        // Add bot's response to the chat
+        addMessage('bot', data.response || 'Sorry, I didn\'t understand that.');
+      } catch (error) {
+        console.error('Error:', error);
+        addMessage('bot', 'Error connecting to the chatbot.');
+      }
+    }
+
+    // Event listener for the Send button
+    sendBtn.addEventListener('click', sendMessage);
+
+    // Allow pressing Enter to send message
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
